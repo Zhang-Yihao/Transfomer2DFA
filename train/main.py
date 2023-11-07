@@ -73,4 +73,4 @@ while (dig_str != "q"):
     print(f'Predicted next digit: {y_pred.item() + 1}')
 
 # save model
-torch.save(model.state_dict(), 'checkpoint/model.pt')
+torch.save(model.state_dict(), '../model/model.pt')
