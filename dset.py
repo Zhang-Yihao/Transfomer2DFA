@@ -3,44 +3,54 @@ from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
 
 
-# 生成符合语言规则的数据
-def generate_sequence(start_num, max_seq_length=50):
+# generate a random sequence of digits
+def generate_sequence(max_seq_length=50):
+    start_num = str(np.random.randint(1, 10))
     sequence = [start_num]
-    seq_length = 10 #np.random.randint(2, max_seq_length)
+    seq_length = np.random.randint(2, max_seq_length - 1)
     for _ in range(seq_length - 1):
-        next_num = (sequence[-1] + 7) % 9
-        sequence.append(next_num)
-    return sequence
+        # a_n = (a_{n-1} + 3) % 9 + 1
+        next_num = (int(sequence[-1]) + 4) % 9 + 1
+        sequence.append(str(next_num))
+    # the last digit is the digit to predict
+    target = str((int(sequence[-1]) + 4) % 9 + 1)
+    # padding
+    sequence = sequence + ['0'] * (max_seq_length - len(sequence))
+    return sequence, target
 
 
-# 定义数据集类
+# define a PyTorch Dataset
 class NumberSequenceDataset(Dataset):
     def __init__(self, num_samples, seq_length):
         self.samples = []
+        self.targets = []
         for _ in range(num_samples):
-            start_num = np.random.randint(0, 9)  # 随机选择起始数字
-            sequence = generate_sequence(start_num, seq_length)
+            sequence, target = generate_sequence(seq_length)
             self.samples.append(sequence)
+            # convert target to probability distribution for cross-entropy loss
+            target = int(target)
+            target_dist = [0] * 10
+            target_dist[target - 1] = 1
+            self.targets.append(target_dist)
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, idx):
-        sample = self.samples[idx]
-        # 转换为PyTorch张量
-        return torch.tensor(sample[:-1], dtype=torch.long), torch.tensor(sample[-1], dtype=torch.long)
+        return torch.LongTensor([int(digit) for digit in self.samples[idx]]), \
+            torch.LongTensor(self.targets[idx])
 
 
-# 分割数据集
+# divide the dataset into train and test sets
 def get_dataloader(num_samples, seq_length, test_split):
     full_dataset = NumberSequenceDataset(num_samples, seq_length)
 
-    # 分割数据集为训练集和测试集
+    # dividing process
     train_size = int((1 - test_split) * len(full_dataset))
     test_size = len(full_dataset) - train_size
     train_dataset, test_dataset = random_split(full_dataset, [train_size, test_size])
 
-    # 创建DataLoader实例
+    # create dataloaders instances
     train_loader = DataLoader(dataset=train_dataset, batch_size=32, shuffle=True)
     test_loader = DataLoader(dataset=test_dataset, batch_size=32, shuffle=False)
     return train_loader, test_loader

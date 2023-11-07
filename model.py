@@ -3,11 +3,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class DigitEmbedding(nn.Module):
+    def __init__(self, embed_dim):
+        super(DigitEmbedding, self).__init__()
+        # 10 digits + 1 padding token "0"
+        self.embedding = nn.Embedding(num_embeddings=11, embedding_dim=embed_dim, padding_idx=0)
+
+    def forward(self, x):
+        return self.embedding(x)
+
 
 class SimpleAttentionModel(nn.Module):
-    def __init__(self, vocab_size, embed_dim, mlp_hidden_dim):
+    def __init__(self, vocab_size, embed_dim, mlp_hidden_dim, padding_idx=0):
         super(SimpleAttentionModel, self).__init__()
-        self.embedding = nn.Embedding(vocab_size, embed_dim)
+        self.padding = padding_idx
+        self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=padding_idx)
         self.q_matrix = nn.Linear(embed_dim, embed_dim, bias=False)
         self.k_matrix = nn.Linear(embed_dim, embed_dim, bias=False)
         self.v_matrix = nn.Linear(embed_dim, embed_dim, bias=False)
@@ -20,13 +30,16 @@ class SimpleAttentionModel(nn.Module):
     def forward(self, x):
         # x: [batch_size, seq_len]
         embedded = self.embedding(x)  # [batch_size, seq_len, embed_dim]
+        # Compute padding mask
+        padding_mask = (x == self.padding)  # [batch_size, seq_len]
+        # Compute q, k, v matrices
         q = self.q_matrix(embedded)  # [batch_size, seq_len, embed_dim]
         k = self.k_matrix(embedded)  # [batch_size, seq_len, embed_dim]
         v = self.v_matrix(embedded)  # [batch_size, seq_len, embed_dim]
 
         # Compute attention weights
         attn_weights = torch.matmul(q, k.transpose(-2, -1))  # [batch_size, seq_len, seq_len]
-        attn_weights = F.softmax(attn_weights, dim=-1)
+        attn_weights.masked_fill_(padding_mask.unsqueeze(1), 0)  # [batch_size, seq_len, seq_len]
 
         # Apply attention weights to v
         v_out = torch.matmul(attn_weights, v)  # [batch_size, seq_len, embed_dim]
