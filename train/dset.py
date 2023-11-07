@@ -9,11 +9,11 @@ def generate_sequence(max_seq_length=20):
     sequence = [start_num]
     seq_length = np.random.randint(2, max_seq_length - 1)
     for _ in range(seq_length - 1):
-        # a_n = (a_{n-1} + 3) % 10 + 1
-        next_num = (int(sequence[-1]) + 3) % 10 + 1
+        # a_n = (a_{n-1} + 4) % 9 + 1
+        next_num = (int(sequence[-1]) + 4) % 9 + 1
         sequence.append(str(next_num))
     # the last digit is the digit to predict
-    target = str((int(sequence[-1]) + 3) % 10 + 1)
+    target = str((int(sequence[-1]) + 4) % 9 + 1)
     # padding
     sequence = sequence + ['0'] * (max_seq_length - len(sequence))
     return sequence, target

@@ -3,11 +3,11 @@
     "seq_length": 20,
     "test_split": 0.2,
     "vocab_size": 11,
-    "embed_dim": 8,
+    "embed_dim": 32,
     "mlp_hidden_dim": 64,
     "batch_size": 100,
     "num_epochs": 500,
     "learning_rate": 0.0005,
     "model_name": "self",
-    "func_name": "no_compute"
+    "func_name": "simple"
 }
