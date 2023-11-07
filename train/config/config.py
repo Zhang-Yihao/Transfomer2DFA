@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import json
 
-# 定义 Config 数据类
+# define config class with dataclass decorator
 @dataclass
 class Config:
     num_samples: int
@@ -13,8 +13,10 @@ class Config:
     batch_size: int
     num_epochs: int
     learning_rate: float
+    model_name: str
+    func_name: str
 
-# 从 JSON 文件中读取配置
+# read config from json file
 def read_config(config_path):
     with open(config_path, 'r') as f:
         config_dict = json.load(f)
