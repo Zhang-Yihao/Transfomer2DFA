@@ -1,13 +1,14 @@
 {
-    "num_samples": 1000,
-    "seq_length": 20,
+    "num_samples": 300,
+    "seq_length": 10,
     "test_split": 0.2,
     "vocab_size": 11,
-    "embed_dim": 32,
-    "mlp_hidden_dim": 64,
-    "batch_size": 100,
-    "num_epochs": 500,
-    "learning_rate": 0.0005,
+    "embed_dim": 16,
+    "mlp_hidden_dim": 32,
+    "batch_size": 32,
+    "num_epochs": 200,
+    "learning_rate": 0.001,
     "model_name": "self",
-    "func_name": "simple"
+    "func_name": "no_compute",
+    "pred_num": 2
 }

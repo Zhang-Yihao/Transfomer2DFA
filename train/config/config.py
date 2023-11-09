@@ -15,6 +15,7 @@ class Config:
     learning_rate: float
     model_name: str
     func_name: str
+    pred_num: int
 
 # read config from json file
 def read_config(config_path):
