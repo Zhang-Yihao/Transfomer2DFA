@@ -1,9 +1,13 @@
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
+from config.config import read_config
+
+# read config
+config = read_config('config/config.json')
 
 
-def target_func(x, target_func_name="simple"):
+def target_func(x, target_func_name=config.func_name):
     def find_last_nonzero(lst):
         for k in range(len(lst) - 1, -1, -1):
             if lst[k] != 0:
@@ -11,37 +15,36 @@ def target_func(x, target_func_name="simple"):
         return 0
 
     if target_func_name == "simple":
-        return (find_last_nonzero(x) + 4) % 9 + 1
-    elif target_func_name == "glob":
+        return (find_last_nonzero(x) + 4) % 3 + 1
+    elif target_func_name == "long_term_dependency":
         if int(x[0]) < 3:
-            return (find_last_nonzero(x) + 3) % 9 + 1
+            return (find_last_nonzero(x) + 3) % 4 + 1
         elif int(x[0]) < 6:
-            return (find_last_nonzero(x) + 4) % 10 + 1
+            return (find_last_nonzero(x) + 4) % 3 + 1
         else:
-            return (find_last_nonzero(x) + 6) % 7 + 1
-    elif target_func_name == "no_compute":
-        # loop for (x, x, y, y)
-        # get len of x without padding
+            return (find_last_nonzero(x) + 6) % 2 + 1
+    elif target_func_name == "regex0":
+        # (1, 1, 2, 2)*
         len_x = find_last_nonzero(x) + 1
-        if len_x == 1:
-            return x[0]
-        elif len_x == 2:
-            return x[0] + 1
-        elif len_x == 3:
-            return x[2]
-        else:
-            if len_x % 4 in [0, 1]:
-                return x[0]
-            elif len_x % 4 in [2, 3]:
-                return x[0] + 1
-        raise Exception("Should not reach here")
+        num_lst = [1, 1, 2, 2]
+        return num_lst[len_x % 4]
+    elif target_func_name == "regex1":
+        # (1, 3, 2, 4)*
+        len_x = find_last_nonzero(x) + 1
+        num_lst = [1, 3, 2, 4]
+        return num_lst[len_x % 4]
+    elif target_func_name == "regex2":
+        # (1, 1, 3)*
+        len_x = find_last_nonzero(x) + 1
+        num_lst = [1, 1, 3]
+        return num_lst[len_x % 3]
 
 
 # generate a simple sequence of digits that only depends on the previous digit
 def generate_sequence(max_seq_length=20, target_func_name="simple"):
-    start_num = np.random.randint(1, 10)
+    start_num = 1 if "regex" in target_func_name else np.random.randint(1, config.vocab_size-1)
     sequence = [start_num]
-    seq_length = np.random.randint(1, max_seq_length - 5)
+    seq_length = np.random.randint(1, max_seq_length-2)
     for _ in range(seq_length - 1):
         sequence.append(target_func(sequence, target_func_name))
     # padding

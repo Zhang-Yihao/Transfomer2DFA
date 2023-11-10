@@ -2,13 +2,20 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+from config.config import read_config
+
+config = read_config('config/config.json')
 
 
 class DigitEmbedding(nn.Module):
-    def __init__(self, embed_dim):
+    def __init__(self):
         super(DigitEmbedding, self).__init__()
-        # 10 digits + 1 padding token "0"
-        self.embedding = nn.Embedding(num_embeddings=11, embedding_dim=embed_dim, padding_idx=0)
+        # config.vocab_size-1 digits + 1 padding token "0"
+        self.embedding = nn.Embedding(
+            num_embeddings=config.vocab_size,
+            embedding_dim=config.embed_dim,
+            padding_idx=config.padding_idx
+        )
 
     def forward(self, x):
         return self.embedding(x)

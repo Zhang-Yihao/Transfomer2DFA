@@ -1,14 +1,16 @@
 {
-    "num_samples": 300,
+    "num_samples": 500,
     "seq_length": 10,
     "test_split": 0.2,
-    "vocab_size": 11,
-    "embed_dim": 16,
+    "padding_idx": 0,
+    "vocab_size": 5,
+    "embed_dim": 4,
     "mlp_hidden_dim": 32,
-    "batch_size": 32,
+    "batch_size": 10,
     "num_epochs": 200,
-    "learning_rate": 0.001,
+    "learning_rate": 0.0005,
+    "interact": 0,
     "model_name": "self",
-    "func_name": "no_compute",
-    "pred_num": 2
+    "func_name": "regex2",
+    "pred_num": 1
 }

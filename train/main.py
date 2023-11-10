@@ -24,10 +24,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
 
 def pred_next_n_digits(xin, n, mdl):
-    # for predict multiple digits. The problem is
-    # 1. too slow
-    # 2. no use
-    # WHY???
+    # Parallel is here poorly implemented
     # xinput: [batch_size, seq_len]
     # n: number of digits to predict
     # return: y_pred_out: [batch_size, n, vocab_size]
@@ -77,8 +74,13 @@ torch.autograd.set_detect_anomaly(True)
 for epoch in range(config.num_epochs):
     for batch_idx, x in enumerate(train_loader):
         optimizer.zero_grad()
-        y_pred = model(x)
-        loss = loss_fn(y_pred, torch.LongTensor([target_func(seq, config.func_name) for seq in x]))
+        if config.pred_num == 1:
+            y_pred = model(x)
+            loss = loss_fn(y_pred, torch.LongTensor([target_func(seq, config.func_name) for seq in x]))
+        else:
+            y_pred = pred_next_n_digits(x, config.pred_num, model)
+            y_correct = get_correct_n_digits(x, config.pred_num)
+            loss = loss_fn(y_pred, y_correct)
         loss.backward()
         optimizer.step()
         if epoch % 10 == 0 and batch_idx == 0:
@@ -95,32 +97,34 @@ for x in test_loader:
     y = torch.LongTensor([target_func(seq, config.func_name) for seq in x])
     num_correct += (y_pred == y).sum()
     num_samples += y.size(0)
-print(f'Accuracy: {num_correct / num_samples * 100:.2f}%')
+acc = float(num_correct) / num_samples * 100
+print(f'Accuracy: {acc:.4f}%')
 
 # give some examples
 for x in test_loader:
     y_pred = model(x)
     _, y_pred = y_pred.max(dim=1)
-    for i in range(1):
-        print(f'Input: {x[i].tolist()}')
-        print(f'Ground truth: {target_func(x[i].tolist(), config.func_name)}')
-        print(f'Prediction: {y_pred[i].item()}')
-        print('---')
+    print(f'Input: {x[0].tolist()}')
+    print(f'Ground truth: {target_func(x[0].tolist(), config.func_name)}')
+    print(f'Prediction: {y_pred[0].item()}')
+    print('---')
 
 # interactive mode
-dig_str = ""
-while dig_str != "q":
-    dig_str = input("Enter a digit sequence (or q to quit): ")
-    if dig_str == "q":
-        break
-    dig_list = [int(dig) for dig in dig_str.split()]
-    dig_list = dig_list + [0] * (config.seq_length - len(dig_list))
-    x = torch.LongTensor(dig_list).unsqueeze(0)
-    y_pred = model(x)
-    _, y_pred = y_pred.max(dim=1)
-    print(f'Predicted next digit: {y_pred.item()}')
+interact = config.interact
+if interact:
+    dig_str = ""
+    while dig_str != "q":
+        dig_str = input("Enter a digit sequence (or q to quit): ")
+        if dig_str == "q":
+            break
+        dig_list = [int(dig) for dig in dig_str.split()]
+        dig_list = dig_list + [0] * (config.seq_length - len(dig_list))
+        x = torch.LongTensor(dig_list).unsqueeze(0)
+        y_pred = model(x)
+        _, y_pred = y_pred.max(dim=1)
+        print(f'Predicted next digit: {y_pred.item()}')
 
 # save model
 model_rand_id = np.random.randint(100000)
-model_id = f'{config.model_name}_{config.num_samples}_{config.seq_length}_{model_rand_id}'
+model_id = f'{config.model_name}_{config.func_name}_{acc}_{model_rand_id}'
 torch.save(model.state_dict(), '../model/model_{}.pt'.format(model_id))
