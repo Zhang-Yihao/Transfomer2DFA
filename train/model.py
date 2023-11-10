@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from config.config import read_config
+from train.config import read_config
 
-config = read_config('config/config.json')
+config = read_config('config.json')
 
 
 class DigitEmbedding(nn.Module):

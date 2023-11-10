@@ -1,12 +1,12 @@
 import torch
 import numpy as np
-from dset import get_dataloader, generate_sequence, target_func
+from dset import get_dataloader, target_func
 from model import SimpleAttentionModel, SelfAttentionModel
-from config.config import read_config
+from train.config import read_config
 
 
 # read config
-config = read_config('config/config.json')
+config = read_config('config.json')
 
 train_loader, test_loader = get_dataloader(
     config.num_samples, config.seq_length, config.test_split, config.func_name, config.batch_size
@@ -128,3 +128,4 @@ if interact:
 model_rand_id = np.random.randint(100000)
 model_id = f'{config.model_name}_{config.func_name}_{acc}_{model_rand_id}'
 torch.save(model.state_dict(), '../model/model_{}.pt'.format(model_id))
+print(f'Saved model to ../model/model_{model_id}.pt')

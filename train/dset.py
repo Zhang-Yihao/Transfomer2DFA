@@ -1,10 +1,10 @@
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
-from config.config import read_config
+from train.config import read_config
 
 # read config
-config = read_config('config/config.json')
+config = read_config('config.json')
 
 
 def target_func(x, target_func_name=config.func_name):

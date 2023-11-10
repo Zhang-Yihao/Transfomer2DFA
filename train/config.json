@@ -9,8 +9,8 @@
     "batch_size": 10,
     "num_epochs": 200,
     "learning_rate": 0.0005,
-    "interact": 0,
+    "interact": 1,
     "model_name": "self",
-    "func_name": "regex2",
+    "func_name": "regex0",
     "pred_num": 1
 }
