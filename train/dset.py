@@ -4,7 +4,10 @@ import numpy as np
 from train.config import read_config
 
 # read config
-config = read_config('config.json')
+try:
+    config = read_config('config.json')
+except FileNotFoundError:
+    config = read_config('train/config.json')
 
 
 def target_func(x, target_func_name=config.func_name):
