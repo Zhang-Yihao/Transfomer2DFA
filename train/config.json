@@ -12,5 +12,6 @@
     "interact": 1,
     "model_name": "self",
     "func_name": "regex0",
-    "pred_num": 1
+    "pred_num": 1,
+    "pos_embed": 1
 }

@@ -12,9 +12,10 @@ trans_mat = get_transition_matrix(model, dataset, kmeans_mdl, 5)
 
 num_corr = 0
 # use tqdm to show progress bar
-for i in tqdm(range(len(dataset))):
+test_range = len(dataset)
+for i in tqdm(range(test_range)):
     data = dataset[i]
     if get_model_out(data, model).argmax() == predict_by_automata(model, dataset, i, kmeans_mdl, trans_mat):
         num_corr += 1
 
-print("Accuracy: ", num_corr / len(dataset))
+print("Accuracy: ", num_corr / test_range)

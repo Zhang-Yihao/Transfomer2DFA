@@ -3,10 +3,22 @@ from read_model import get_params, get_qkv, last_nonzero_idx, get_model_out, tes
 import torch
 import torch.nn.functional as F
 from sklearn.cluster import KMeans
+from train.model import PositionalEncoding, DigitEmbedding
 import numpy as np
+from train.config import read_config
+
+# read config
+try:
+    config = read_config('config.json')
+except FileNotFoundError:
+    config = read_config('train/config.json')
 
 
-def get_keys(model):
+def get_keys(model, x=None, embedding=DigitEmbedding()):
+    if x:
+        embed_x = model.embedding(x)
+        K = model['k_matrix']
+        return torch.matmul(embed_x, K.transpose(0, 1)).detach().numpy()
     return get_qkv(model)['k'].detach().numpy()
 
 
@@ -130,8 +142,20 @@ def calc_state_output(model, dataset, state_id, lst_tok, kmeans_model):
 def predict_by_automata(model, dataset, idx, kmeans_model, trans_matrix, mode="one_trans"):
     data = dataset[idx]
     if mode == "all_trans":
-        # TODO: implement this
-        pass
+        predict_len = last_nonzero_idx(data)
+        data = [data[0]] + [0] * (len(data) - 1)
+        lst_nonzero = last_nonzero_idx(data)
+        state_distribution = np.zeros(len(kmeans_model.cluster_centers_))
+        state_distribution[kmeans_model.predict(np.array([encode_lst_as_states(model, data)]))[0]] = 1
+        while lst_nonzero < predict_len:
+            # predict the next token
+            trans_matrix_now = trans_matrix[data[lst_nonzero]]
+            state_distribution = np.matmul(trans_matrix_now, state_distribution)
+            data[lst_nonzero + 1] = calc_state_output(model, dataset, state_distribution.argmax(), data[lst_nonzero],
+                                                      kmeans_model)
+            lst_nonzero = last_nonzero_idx(data)
+        return calc_state_output(model, dataset, state_distribution.argmax(), data[lst_nonzero], kmeans_model)
+
     elif mode == "one_trans":
         data_key = encode_lst_as_states(model, data)
         state_start = kmeans_model.predict(np.array([data_key]))[0]

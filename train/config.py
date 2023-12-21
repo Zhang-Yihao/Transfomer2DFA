@@ -19,6 +19,7 @@ class Config:
     model_name: str
     func_name: str
     pred_num: int
+    pos_embed: int
 
 
 # read config from json file

@@ -4,8 +4,35 @@ import torch.nn.functional as F
 import numpy as np
 from train.config import read_config
 
-config = read_config('config.json')
+try:
+    config = read_config('config.json')
+except FileNotFoundError:
+    config = read_config('train/config.json')
 
+class PositionalEncoding(nn.Module):
+    # pos_embed_vec = torch.zeros(embedded.shape[1], embedded.shape[2])
+    # for pos in range(embedded.shape[1]):
+    #     for i in range(embedded.shape[2] // 2):
+    #         pos_embed_vec[pos, 2 * i] = np.sin(pos / 10000 ** (2 * i / embedded.shape[2]))
+    #         pos_embed_vec[pos, 2 * i + 1] = np.cos(pos / 10000 ** (2 * i / embedded.shape[2]))
+    # pos_embed_vec = pos_embed_vec.unsqueeze(0).repeat(embedded.shape[0], 1, 1)
+    def __init__(self, embed_dim, Embedding):
+        super(PositionalEncoding, self).__init__()
+        self.pos_embed_vec = torch.zeros(config.seq_length, embed_dim)
+        # self.embedding is the embedding layer of the model
+        self.embedding = Embedding
+        # if embedding is a matrix, then we need to compute the positional encoding
+        # if embedding is a nn.Embedding layer, then we don't need to compute the positional encoding
+        if isinstance(self.embedding, nn.Embedding):
+            for pos in range(config.seq_length):
+                for i in range(embed_dim // 2):
+                    self.pos_embed_vec[pos, 2 * i] = np.sin(pos / 10000 ** (2 * i / embed_dim))
+                    self.pos_embed_vec[pos, 2 * i + 1] = np.cos(pos / 10000 ** (2 * i / embed_dim))
+            self.pos_embed_vec = self.pos_embed_vec.unsqueeze(0)
+
+    def forward(self, x):
+        embedded = self.embedding(x)
+        return embedded + self.pos_embed_vec.repeat(embedded.shape[0], 1, 1)
 
 class DigitEmbedding(nn.Module):
     def __init__(self):
@@ -64,11 +91,13 @@ class SimpleAttentionModel(nn.Module):
 class SelfAttentionModel(nn.Module):
     # The only difference between this model and SimpleAttentionModel is that
     # the query vector is computed from the last token that is not padding.
-    def __init__(self, vocab_size, embed_dim, mlp_hidden_dim, padding_idx=0, pos_embed=False):
+    def __init__(self, vocab_size, embed_dim, mlp_hidden_dim, padding_idx=0):
         super(SelfAttentionModel, self).__init__()
         self.padding = padding_idx
-        self.pos_embed = pos_embed
+        self.pos_embed = config.pos_embed
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=padding_idx)
+        if self.pos_embed:
+            self.embedding = PositionalEncoding(embed_dim, self.embedding)
         self.q_matrix = nn.Linear(embed_dim, embed_dim, bias=False)
         self.k_matrix = nn.Linear(embed_dim, embed_dim, bias=False)
         self.v_matrix = nn.Linear(embed_dim, embed_dim, bias=False)
@@ -81,16 +110,6 @@ class SelfAttentionModel(nn.Module):
     def forward(self, x):
         # x: [batch_size, seq_len]
         embedded = self.embedding(x)  # [batch_size, seq_len, embed_dim]
-        if self.pos_embed:
-            # PE(pos, 2i) = sin(pos/10000^(2i/d_model))
-            # PE(pos, 2i+1) = cos(pos/10000^(2i/d_model))
-            pos_embed_vec = torch.zeros(embedded.shape[1], embedded.shape[2])
-            for pos in range(embedded.shape[1]):
-                for i in range(embedded.shape[2] // 2):
-                    pos_embed_vec[pos, 2 * i] = np.sin(pos / 10000 ** (2 * i / embedded.shape[2]))
-                    pos_embed_vec[pos, 2 * i + 1] = np.cos(pos / 10000 ** (2 * i / embedded.shape[2]))
-            pos_embed_vec = pos_embed_vec.unsqueeze(0).repeat(embedded.shape[0], 1, 1)
-            embedded = embedded + pos_embed_vec
         # Compute padding mask
         padding_mask = (x == self.padding)  # [batch_size, seq_len]
         # get last token that is not padding

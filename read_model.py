@@ -2,7 +2,12 @@ import torch
 import torch.nn.functional as F
 import copy
 from train.dset import target_func
+from train.config import read_config
 
+try:
+    config = read_config('config.json')
+except FileNotFoundError:
+    config = read_config('train/config.json')
 
 def get_params(model):
     param_dict = {'embedding': copy.deepcopy(model['embedding.weight']),
