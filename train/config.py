@@ -20,6 +20,7 @@ class Config:
     func_name: str
     pred_num: int
     pos_embed: int
+    output_size: int
 
 
 # read config from json file

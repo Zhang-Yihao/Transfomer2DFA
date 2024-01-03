@@ -1,17 +1,18 @@
 {
-    "num_samples": 500,
+    "num_samples": 100,
     "seq_length": 10,
     "test_split": 0.2,
     "padding_idx": 0,
-    "vocab_size": 5,
+    "vocab_size": 3,
+    "output_size": 2,
     "embed_dim": 4,
     "mlp_hidden_dim": 32,
     "batch_size": 10,
-    "num_epochs": 200,
+    "num_epochs": 100,
     "learning_rate": 0.0005,
     "interact": 1,
-    "model_name": "self",
-    "func_name": "regex0",
+    "model_name": "enhanced",
+    "func_name": "tomita_7",
     "pred_num": 1,
     "pos_embed": 1
 }

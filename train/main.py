@@ -1,8 +1,9 @@
 import torch
 import numpy as np
 from train.dset import get_dataloader, target_func
-from train.model import SimpleAttentionModel, SelfAttentionModel
+from train.model import SimpleAttentionModel, SelfAttentionModel, EnhancedAttentionModel
 from train.config import read_config
+from train.tomita import *
 
 
 def pred_next_n_digits(xin, n, mdl):
@@ -64,19 +65,32 @@ if __name__ == "__main__":
     # define model
     model = {
         "simple": SimpleAttentionModel,
-        "self": SelfAttentionModel
-    }[config.model_name](config.vocab_size, config.embed_dim, config.mlp_hidden_dim)
+        "self": SelfAttentionModel,
+        "enhanced": EnhancedAttentionModel
+    }[config.model_name](config.vocab_size, config.embed_dim, config.mlp_hidden_dim, config.output_size)
 
     # define loss function and optimizer
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+
+    # use GPU if available
+    device = 'cpu' #torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+
     # train
     model.train()
     torch.autograd.set_detect_anomaly(True)
     for epoch in range(config.num_epochs):
         for batch_idx, x in enumerate(train_loader):
+            data = x[0].to(device)
+            label = x[1].flatten().to(device)
             optimizer.zero_grad()
-            if config.pred_num == 1:
+            if "tomita" in config.func_name:
+                # x = (data, label), stored in a tensor of length batch_size
+                y_pred = model(data)
+                tomita_func = eval(config.func_name)
+                loss = loss_fn(y_pred, label)
+            elif config.pred_num == 1:
                 y_pred = model(x)
                 loss = loss_fn(y_pred, torch.LongTensor([target_func(seq, config.func_name) for seq in x]))
             else:
@@ -93,10 +107,17 @@ if __name__ == "__main__":
     num_correct = 0
     num_samples = 0
     for x in test_loader:
-        y_pred = model(x)
+        y_pred = model(x[0])
         # get the index of the max log-probability
         _, y_pred = y_pred.max(dim=1)
-        y = torch.LongTensor([target_func(seq, config.func_name) for seq in x])
+        if "tomita" in config.func_name:
+            data = x[0].to(device)
+            label = x[1].flatten().to(device)
+            y_pred = model(data)
+            _, y_pred = y_pred.max(dim=1)
+            y = label
+        else:
+            y = torch.LongTensor([target_func(seq, config.func_name) for seq in x])
         num_correct += (y_pred == y).sum()
         num_samples += y.size(0)
     acc = float(num_correct) / num_samples * 100
@@ -104,13 +125,17 @@ if __name__ == "__main__":
 
     # give some examples
     for x in test_loader:
-        y_pred = model(x)
+        y_pred = model(x[0])
         _, y_pred = y_pred.max(dim=1)
-        print(f'Input: {x[0].tolist()}')
-        print(f'Ground truth: {target_func(x[0].tolist(), config.func_name)}')
-        print(f'Prediction: {y_pred[0].item()}')
+        print(f'Input: {x[0][0].tolist()}')
+        if "tomita" in config.func_name:
+            print(f'Ground truth: {x[1][0].item()}')
+            print(f'Prediction: {y_pred[0].item()}')
+        else:
+            print(f'Ground truth: {target_func(x[0].tolist(), config.func_name)}')
+            print(f'Prediction: {y_pred[0].item()}')
         print('---')
-
+"""
     # interactive mode
     interact = config.interact
     if interact:
@@ -131,3 +156,4 @@ if __name__ == "__main__":
     model_id = f'{config.model_name}_{config.func_name}_{acc}_{model_rand_id}'
     torch.save(model.state_dict(), '../model/model_{}.pt'.format(model_id))
     print(f'Saved model to ../model/model_{model_id}.pt')
+"""
